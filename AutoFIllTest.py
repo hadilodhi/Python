@@ -36,7 +36,7 @@ def fulfill_form(username, user_email):
     time.sleep(1)
     input_customer_email.send_keys(user_email)
     time.sleep(1)
-    #submit.click()
+    submit.click()
     time.sleep(7)
 
 
