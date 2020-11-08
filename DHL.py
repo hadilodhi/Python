@@ -5,10 +5,19 @@ from selenium.webdriver.common.keys import Keys
 import time
 import csv
 import os
+import sys
 
 
 # Clear terminal
 os.system('cls')
+print("Procedure starting")
+time.sleep(1)
+
+# Define Variables
+countries = []
+countries2 = []
+failed = []
+empty_lines = 0
 
 # Setting parameters for selenium to work
 options = webdriver.ChromeOptions()
@@ -19,12 +28,15 @@ driver.get('https://mydhl.express.dhl/pk/en/home.html#/createNewShipmentTab')
 # Read CSV File
 DHLcsv = open('DHL.csv',"r")
 reader = csv.reader(DHLcsv)
-countries = []
-failed = []
 for row in reader:
-    countries.append([row[0], row[1], row[2], row[3]])
+    if not ''.join(row).strip():
+        empty_lines += 1 
+        continue
+    countries.append([row[0], row[1], row[2], row[3], row[4]])
+DHLcsv.close()
+
 # Close Cookie Message
-time.sleep(3)
+driver.implicitly_wait(5)
 driver.find_element_by_xpath("/html/body/footer/div/div/div/button").click()
 
 # Commands
@@ -60,14 +72,40 @@ for row in countries:
         troublesome = driver.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div/div/div/div[2]/div[2]/form/footer/button")#.click()
         driver.execute_script("arguments[0].click();",troublesome)
         time.sleep(5)
+        # Formatting
+        try:
+            edit = driver.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div/div/div/div[2]/div[3]/form/div/div/div[1]/div[3]/div[1]/div[1]/div/div[3]/div/div/div/div/div[3]/div/span").text
+        except:
+            try:
+                edit = driver.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div/div/div/div[2]/div[3]/form/div/div/div[1]/div[3]/div[1]/div[1]/div/div[2]/div/div/div/div/div[3]/div/span").text
+            except:
+                sys.exit(1)
+        edit = edit.split(".", 1)[0]
+        row[4] = edit.replace(",",".")
+        # Append
+        countries2.append([row[0], row[1], row[2], row[3], row[4]])
+        # Reload
         driver.get('https://mydhl.express.dhl/pk/en/home.html#/createNewShipmentTab')
     except:
         failed.append(countries)
         pass
 
 
+# Write CSV File
+DHLcsvs = open('DHL.csv', "w", newline='')
+writer = csv.writer(DHLcsvs)
+for row in countries2:
+    writer.writerow([row[0], row[1], row[2], row[3], row[4]])
+DHLcsvs.close()
+
+# Done
 driver.quit()
 if len(failed) > 0:
         print("%s cases have failed" % len(failed))
 else:
     print("Procedure concluded")
+    print("Opening file in excel")
+time.sleep(5)
+currentDirectory = os.getcwd()
+currentDirectory = currentDirectory + r"\DHL.csv"
+os.startfile(currentDirectory)
